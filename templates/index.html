@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ bot_name }} - Television Study Assistant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rammetto+One&family=Work+Sans:wght@400;500;600&family=VT323&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --wall: #2d8a82;
+      --wall-dark: #257871;
+      --walnut: #7b4a2b;
+      --walnut-dark: #4f2e19;
+      --beige: #dbc9a5;
+      --beige-dark: #b9a47b;
+      --bezel: #211c19;
+      --screen: #eef2e6;
+      --ink: #1c2320;
+      --ink-soft: #5d6b64;
+      --orange: #e8672a;
+      --line: #d3dac8;
+      --display: "Rammetto One", "Segoe UI", sans-serif;
+      --body: "Work Sans", "Segoe UI", sans-serif;
+      --osd: "VT323", ui-monospace, Consolas, monospace;
+      --mono: ui-monospace, Consolas, monospace;
+      --bars: linear-gradient(90deg, #f2f2f2 0 14.28%, #f0d02a 0 28.56%, #2fc7c7 0 42.84%, #3bbf4b 0 57.12%, #d545c4 0 71.4%, #e04236 0 85.68%, #3050d0 0);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body { height: 100%; }
+
+    body {
+      font-family: var(--body);
+      font-size: 16px;
+      line-height: 1.55;
+      color: var(--ink);
+      background: repeating-linear-gradient(90deg, var(--wall) 0 44px, var(--wall-dark) 44px 88px);
+      display: flex;
+      justify-content: center;
+      padding: 18px 24px 22px;
+    }
+
+    .tv {
+      width: 100%;
+      max-width: 980px;
+      height: 100%;
+      max-height: 880px;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .ears { position: relative; height: 70px; width: 120px; margin: 0 auto -4px; flex-shrink: 0; }
+
+    .ears i {
+      position: absolute;
+      bottom: 6px;
+      left: 50%;
+      width: 4px;
+      height: 92px;
+      margin-left: -2px;
+      background: #d4d7dc;
+      border-radius: 2px;
+      transform-origin: bottom center;
+    }
+
+    .ears i:nth-child(1) { transform: rotate(-34deg); }
+    .ears i:nth-child(2) { transform: rotate(30deg); }
+
+    .ears::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      width: 64px;
+      height: 22px;
+      margin-left: -32px;
+      background: var(--walnut-dark);
+      border-radius: 32px 32px 0 0;
+    }
+
+    .cabinet {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 1fr 210px;
+      gap: 18px;
+      padding: 20px;
+      background: linear-gradient(180deg, #8d5834, var(--walnut) 40%, #6a3e22);
+      border: 3px solid var(--walnut-dark);
+      border-radius: 26px;
+      box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.08);
+    }
+
+    .bezel {
+      min-height: 0;
+      display: flex;
+      background: var(--bezel);
+      border-radius: 34px / 30px;
+      padding: 14px;
+      box-shadow: inset 0 0 0 3px #3a332e;
+    }
+
+    .screen {
+      flex: 1;
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--screen);
+      border-radius: 24px / 22px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: inset 0 0 40px rgba(28, 35, 32, 0.22);
+    }
+
+    .screen::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: repeating-linear-gradient(0deg, rgba(28, 35, 32, 0.045) 0 1px, transparent 1px 3px);
+    }
+
+    .osd {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 26px 6px;
+      font-family: var(--osd);
+      font-size: 22px;
+      line-height: 1;
+      color: var(--ink-soft);
+    }
+
+    .osd b { font-weight: 400; color: var(--orange); }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 26px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      scroll-behavior: smooth;
+    }
+
+    .msg { max-width: 86%; }
+    .msg.user { align-self: flex-end; }
+
+    .bubble { overflow-wrap: anywhere; }
+
+    .msg.bot .bubble {
+      background: #fff;
+      border-radius: 4px 4px 12px 12px;
+      padding: 18px 20px 12px;
+      position: relative;
+      box-shadow: 0 2px 0 var(--line);
+    }
+
+    .msg.bot .bubble::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      border-radius: 4px 4px 0 0;
+      background: var(--bars);
+    }
+
+    .msg.user .bubble {
+      font-family: var(--mono);
+      font-size: 15px;
+      color: #fff;
+      background: rgba(28, 35, 32, 0.9);
+      padding: 8px 16px;
+      border-radius: 4px;
+    }
+
+    .msg.error .bubble { color: #a3221a; }
+
+    .bubble p + p, .bubble p + ul, .bubble ul + p, .bubble p + pre, .bubble ul + pre, .bubble pre + p { margin-top: 9px; }
+    .bubble ul { padding-left: 20px; }
+    .bubble li + li { margin-top: 3px; }
+    .bubble li::marker { color: var(--orange); }
+    .bubble strong { font-weight: 600; }
+
+    .bubble code {
+      font-family: var(--mono);
+      font-size: 0.86em;
+      background: #e8eddf;
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+
+    .bubble pre {
+      background: var(--bezel);
+      color: #eef2e6;
+      border-radius: 6px;
+      padding: 12px 14px;
+      overflow-x: auto;
+    }
+
+    .bubble pre code { background: none; padding: 0; color: inherit; }
+
+    .tuning { display: flex; align-items: center; gap: 12px; padding: 20px; font-family: var(--osd); font-size: 21px; color: var(--ink-soft); }
+
+    .tuning span {
+      width: 64px;
+      height: 16px;
+      background: var(--bars);
+      animation: tune 0.9s steps(3, end) infinite;
+    }
+
+    @keyframes tune {
+      0% { opacity: 1; }
+      50% { opacity: 0.35; }
+      100% { opacity: 1; }
+    }
+
+    .composer {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      margin: 0 22px 20px;
+      padding: 10px;
+      background: var(--ink);
+      border-radius: 6px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .composer textarea {
+      flex: 1;
+      font-family: var(--body);
+      font-size: 16px;
+      line-height: 1.4;
+      color: var(--ink);
+      background: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 9px 14px;
+      resize: none;
+      max-height: 110px;
+    }
+
+    .composer textarea:focus { outline: 3px solid var(--orange); }
+    .composer textarea::placeholder { color: #8a968f; }
+
+    .send {
+      font-family: var(--osd);
+      font-size: 22px;
+      color: #fff;
+      background: var(--orange);
+      border: none;
+      border-radius: 4px;
+      padding: 6px 20px;
+      cursor: pointer;
+    }
+
+    .send:hover:not(:disabled) { background: #cf5518; }
+    .send:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+    .send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .panel {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      background: var(--beige);
+      border: 2px solid var(--beige-dark);
+      border-radius: 14px;
+      padding: 16px 14px;
+      min-height: 0;
+      overflow-y: auto;
+    }
+
+    .brand {
+      font-family: var(--display);
+      font-size: 19px;
+      text-align: center;
+      color: var(--walnut-dark);
+      background: var(--beige-dark);
+      border-radius: 6px;
+      padding: 8px 6px;
+    }
+
+    .grille {
+      height: 46px;
+      border-radius: 6px;
+      background: repeating-linear-gradient(90deg, var(--walnut-dark) 0 3px, transparent 3px 8px), var(--beige-dark);
+      flex-shrink: 0;
+    }
+
+    .channels { display: flex; flex-direction: column; gap: 8px; }
+
+    .channel {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--body);
+      font-size: 14px;
+      font-weight: 500;
+      text-align: left;
+      color: var(--ink);
+      background: #f4ead2;
+      border: 2px solid var(--beige-dark);
+      border-bottom-width: 4px;
+      border-radius: 8px;
+      padding: 5px 10px 5px 6px;
+      cursor: pointer;
+    }
+
+    .channel b {
+      font-family: var(--osd);
+      font-size: 22px;
+      font-weight: 400;
+      line-height: 1;
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: var(--walnut-dark);
+      border-radius: 5px;
+      flex-shrink: 0;
+    }
+
+    .channel:hover, .channel:focus-visible { border-color: var(--orange); outline: none; }
+    .channel:active { border-bottom-width: 2px; transform: translateY(2px); }
+
+    .dials { display: flex; justify-content: space-around; margin-top: auto; padding-top: 4px; }
+
+    .dial {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #6a4a35, var(--walnut-dark) 65%);
+      border: 3px solid var(--beige-dark);
+      box-shadow: 0 3px 0 rgba(0, 0, 0, 0.25);
+      position: relative;
+      transition: transform 0.4s;
+    }
+
+    .dial::after {
+      content: "";
+      position: absolute;
+      top: 5px;
+      left: 50%;
+      width: 4px;
+      height: 16px;
+      margin-left: -2px;
+      background: var(--beige);
+      border-radius: 2px;
+    }
+
+    .power {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: var(--body);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--walnut-dark);
+      background: transparent;
+      border: 2px solid var(--walnut-dark);
+      border-radius: 8px;
+      padding: 7px 10px;
+      cursor: pointer;
+    }
+
+    .power i { width: 10px; height: 10px; border-radius: 50%; background: var(--orange); }
+    .power:hover, .power:focus-visible { background: var(--walnut-dark); color: var(--beige); outline: none; }
+
+    .feet { display: flex; justify-content: space-between; padding: 0 12%; flex-shrink: 0; }
+
+    .feet i {
+      width: 40px;
+      height: 16px;
+      background: var(--walnut-dark);
+      clip-path: polygon(0 0, 100% 0, 80% 100%, 20% 100%);
+    }
+
+    @media (max-width: 820px) {
+      body { padding: 0; background: var(--screen); }
+      .tv { max-height: none; }
+      .ears, .feet, .brand, .grille, .dials, .power { display: none; }
+      .cabinet {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+        gap: 0;
+        padding: 0;
+        border: none;
+        border-radius: 0;
+        background: var(--walnut);
+        box-shadow: none;
+      }
+      .panel { order: -1; flex-direction: row; padding: 8px 10px; border: none; border-radius: 0; overflow-x: auto; }
+      .channels { flex-direction: row; }
+      .channel { white-space: nowrap; }
+      .bezel { border-radius: 0; padding: 0; box-shadow: none; }
+      .screen { border-radius: 0; box-shadow: none; }
+      .osd, .messages { padding-left: 14px; padding-right: 14px; }
+      .composer { margin: 0 12px 14px; }
+      .msg { max-width: 94%; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .tuning span { animation: none; }
+      .dial { transition: none; }
+      .messages { scroll-behavior: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="tv">
+    <div class="ears" aria-hidden="true"><i></i><i></i></div>
+
+    <div class="cabinet">
+      <div class="bezel">
+        <main class="screen">
+          <div class="osd">
+            <span>CH <b id="channelLabel">00</b></span>
+            <span>STUDY</span>
+          </div>
+
+          <section class="messages" id="messages" aria-live="polite"></section>
+
+          <div class="composer">
+            <textarea id="input" rows="1" maxlength="2000" placeholder="Ask a television study question" aria-label="Your question"></textarea>
+            <button class="send" id="sendBtn" type="button">SEND</button>
+          </div>
+        </main>
+      </div>
+
+      <aside class="panel">
+        <div class="brand">{{ bot_name }}</div>
+        <div class="grille" aria-hidden="true"></div>
+
+        <nav class="channels" aria-label="Suggested topics">
+          <button class="channel" data-channel="1" data-prompt="Explain how an OLED display produces light and color."><b>1</b>OLED displays</button>
+          <button class="channel" data-channel="2" data-prompt="What is the difference between 4K resolution and HDR?"><b>2</b>4K and HDR</button>
+          <button class="channel" data-channel="3" data-prompt="What is refresh rate and how does it affect motion on a TV?"><b>3</b>Refresh rate</button>
+          <button class="channel" data-channel="4" data-prompt="Compare NTSC, PAL, ATSC and DVB broadcasting standards."><b>4</b>Broadcast standards</button>
+          <button class="channel" data-channel="5" data-prompt="What are HDMI and ARC and what do they do?"><b>5</b>HDMI and ARC</button>
+        </nav>
+
+        <div class="dials" aria-hidden="true">
+          <div class="dial" id="dialA"></div>
+          <div class="dial" id="dialB"></div>
+        </div>
+
+        <button class="power" id="clearBtn" type="button"><i></i>Power cycle</button>
+      </aside>
+    </div>
+
+    <div class="feet" aria-hidden="true"><i></i><i></i></div>
+  </div>
+
+  <script>
+    const GREETING = {{ greeting | tojson }};
+
+    const messagesEl = document.getElementById("messages");
+    const inputEl = document.getElementById("input");
+    const sendBtn = document.getElementById("sendBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const channelLabel = document.getElementById("channelLabel");
+    const dialA = document.getElementById("dialA");
+    const dialB = document.getElementById("dialB");
+
+    let history = [];
+    let busy = false;
+
+    function escapeHtml(text) {
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    function inline(text) {
+      return escapeHtml(text)
+        .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+        .replace(/`(.+?)`/g, "<code>$1</code>");
+    }
+
+    function render(text) {
+      const lines = text.split("\n");
+      let html = "";
+      let inList = false;
+      let inCode = false;
+
+      for (const raw of lines) {
+        if (raw.trim().startsWith("```")) {
+          if (inList) { html += "</ul>"; inList = false; }
+          html += inCode ? "</code></pre>" : "<pre><code>";
+          inCode = !inCode;
+          continue;
+        }
+
+        if (inCode) {
+          html += escapeHtml(raw) + "\n";
+          continue;
+        }
+
+        const line = raw.trim();
+        const item = line.match(/^(?:[-*]|\d+\.)\s+(.*)$/);
+
+        if (item) {
+          if (!inList) { html += "<ul>"; inList = true; }
+          html += "<li>" + inline(item[1]) + "</li>";
+        } else {
+          if (inList) { html += "</ul>"; inList = false; }
+          if (line) html += "<p>" + inline(line.replace(/^#+\s*/, "")) + "</p>";
+        }
+      }
+
+      if (inList) html += "</ul>";
+      if (inCode) html += "</code></pre>";
+      return html;
+    }
+
+    function addMessage(role, text, isError = false) {
+      const wrap = document.createElement("div");
+      wrap.className = "msg " + role + (isError ? " error" : "");
+
+      const bubble = document.createElement("div");
+      bubble.className = "bubble";
+      if (role === "user") bubble.textContent = text;
+      else bubble.innerHTML = render(text);
+
+      wrap.appendChild(bubble);
+      messagesEl.appendChild(wrap);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      return wrap;
+    }
+
+    function addTyping() {
+      const wrap = document.createElement("div");
+      wrap.className = "msg bot";
+      wrap.innerHTML = '<div class="bubble tuning" aria-label="Tuning"><span></span>Tuning</div>';
+      messagesEl.appendChild(wrap);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      return wrap;
+    }
+
+    function setBusy(state) {
+      busy = state;
+      sendBtn.disabled = state;
+    }
+
+    function setChannel(number) {
+      channelLabel.textContent = String(number).padStart(2, "0");
+      dialA.style.transform = "rotate(" + number * 40 + "deg)";
+      dialB.style.transform = "rotate(" + number * -25 + "deg)";
+    }
+
+    async function send(text) {
+      const message = text.trim();
+      if (!message || busy) return;
+
+      addMessage("user", message);
+      inputEl.value = "";
+      inputEl.style.height = "auto";
+      setBusy(true);
+
+      const typing = addTyping();
+
+      try {
+        const response = await fetch("/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message, history })
+        });
+        const data = await response.json();
+        typing.remove();
+
+        if (!response.ok) {
+          addMessage("bot", data.error || "Something went wrong.", true);
+        } else {
+          addMessage("bot", data.reply);
+          history.push({ role: "user", text: message }, { role: "bot", text: data.reply });
+        }
+      } catch (error) {
+        typing.remove();
+        addMessage("bot", "Could not reach the server. Check your connection and try again.", true);
+      } finally {
+        setBusy(false);
+        inputEl.focus();
+      }
+    }
+
+    function resetChat() {
+      history = [];
+      messagesEl.innerHTML = "";
+      setChannel(0);
+      addMessage("bot", GREETING);
+    }
+
+    sendBtn.addEventListener("click", () => send(inputEl.value));
+
+    inputEl.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        send(inputEl.value);
+      }
+    });
+
+    inputEl.addEventListener("input", () => {
+      inputEl.style.height = "auto";
+      inputEl.style.height = Math.min(inputEl.scrollHeight, 110) + "px";
+    });
+
+    clearBtn.addEventListener("click", resetChat);
+
+    document.querySelectorAll(".channel").forEach((button) => {
+      button.addEventListener("click", () => {
+        if (busy) return;
+        setChannel(Number(button.dataset.channel));
+        send(button.dataset.prompt);
+      });
+    });
+
+    resetChat();
+  </script>
+</body>
+</html>
